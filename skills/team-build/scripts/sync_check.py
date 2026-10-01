@@ -47,12 +47,15 @@ def main(argv):
             print("TEAM.md ok")
         return 1 if bad else 0
     base = argv[argv.index("--base") + 1] if "--base" in argv else "main"
-    remote = bool(git("remote", cwd=root))
+    remote = (git("remote", cwd=root).splitlines() or [""])[0]
     if remote and "--no-fetch" not in argv:
         git("fetch", "--prune", "--quiet", cwd=root)
-    ns, base_ref = ("refs/remotes/origin", f"origin/{base}") if remote else ("refs/heads", base)
+    ns, base_ref = (f"refs/remotes/{remote}", f"{remote}/{base}") if remote else ("refs/heads", base)
+    if not git("rev-parse", "--verify", "--quiet", base_ref, cwd=root):
+        print(f"Base branch {base_ref} not found. Pass --base <name> (e.g. --base master).")
+        return 1
     branches = [b for b in git("for-each-ref", "--format=%(refname:short)", ns, cwd=root).splitlines()
-                if b not in (base_ref, "origin/HEAD", "origin")]
+                if b not in (base_ref, f"{remote}/HEAD", remote)]
     now = int(time.time())
     for b in branches:
         r = branch_report(root, base_ref, b, people, now)

@@ -53,7 +53,10 @@ Codex users: run /hooks once and trust the two team-build hooks.
 
 ### Discovery ("we found", "turns out", "X doesn't work")
 1. Append to DECISIONS.md using its entry format. Fill in "Affects" from TEAM.md slices and CONTRACTS.md users.
-2. `git pull --rebase`, commit only DECISIONS.md, and push to main straight away. If they can't push to main, tell them to send it to the integrator.
+2. Get only that entry onto main straight away, never the rest of a feature branch:
+   - On main: `git pull --rebase`, commit only DECISIONS.md, `git push`.
+   - On a feature branch: commit only DECISIONS.md there, then `git checkout main && git pull --rebase && git cherry-pick <that commit> && git push && git checkout -`. Never push the feature branch to main.
+   - If they can't push to main, give them the entry to send to the integrator.
 3. Draft a heads-up naming the affected people and what they should do differently.
 
 ### Contract change

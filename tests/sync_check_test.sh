@@ -32,6 +32,13 @@ echo "$out" | grep -q "min old"                || { echo "FAIL: age"; exit 1; }
 echo "$out" | grep -q "web/hack.ts"            || { echo "FAIL: foreign file"; exit 1; }
 echo "$out" | grep -q "merged-already"         && { echo "FAIL: merged branch listed"; exit 1; }
 
+# missing base branch must be an error, not a silent "all clear"
+if out2="$(python3 "$script" --no-fetch --base master)"; then echo "FAIL: missing base exited 0"; exit 1; fi
+echo "$out2" | grep -q "master not found" || { echo "FAIL: missing base message: $out2"; exit 1; }
+# remote not named origin
+git init -q --bare "$d/remote.git"; git remote add upstream "$d/remote.git"; git push -q upstream main bo-api 2>/dev/null
+out3="$(python3 "$script" --no-fetch)"
+echo "$out3" | grep -q "upstream/bo-api (bo)" || { echo "FAIL: upstream remote: $out3"; exit 1; }
 python3 "$script" --check-team | grep -q "TEAM.md ok" || { echo "FAIL: clean team"; exit 1; }
 echo "| Cy | cy | web/x.ts |" >> TEAM.md
 if python3 "$script" --check-team; then echo "FAIL: overlap not caught"; exit 1; fi
