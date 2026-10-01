@@ -4,6 +4,7 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")/.." && pwd)"
 script="$here/skills/team-build/scripts/sync_check.py"
 d="$(mktemp -d)"; trap 'rm -rf "$d"' EXIT
+rm -rf "$here/skills/team-build/hooks/__pycache__"
 cd "$d"
 git init -q -b main
 git config user.name ana; git config user.email a@x
@@ -34,4 +35,5 @@ echo "$out" | grep -q "merged-already"         && { echo "FAIL: merged branch li
 python3 "$script" --check-team | grep -q "TEAM.md ok" || { echo "FAIL: clean team"; exit 1; }
 echo "| Cy | cy | web/x.ts |" >> TEAM.md
 if python3 "$script" --check-team; then echo "FAIL: overlap not caught"; exit 1; fi
+[ -d "$here/skills/team-build/hooks/__pycache__" ] && { echo "FAIL: sync_check left __pycache__ in the skill (gets committed into projects)"; exit 1; }
 echo "sync_check_test ok"

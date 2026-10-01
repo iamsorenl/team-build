@@ -6,6 +6,7 @@ Usage: sync_check.py [--base main] [--no-fetch]
 """
 import os, sys, time
 
+sys.dont_write_bytecode = True  # the skill is vendored into projects; don't leave .pyc files to get committed
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "hooks"))
 from team_hook import git, owns, overlaps, parse_team  # noqa: E402
 
