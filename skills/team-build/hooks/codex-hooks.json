@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 5,
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/skills/team-build/hooks/team_hook.py\" prompt 2>/dev/null || true",
+            "statusMessage": "team-build check"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "timeout": 5,
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/skills/team-build/hooks/team_hook.py\" edit 2>/dev/null || true",
+            "statusMessage": "team-build check"
+          }
+        ]
+      }
+    ]
+  }
+}
