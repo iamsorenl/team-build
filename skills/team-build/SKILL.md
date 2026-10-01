@@ -28,7 +28,7 @@ This runs at the start of an event, so keep it quick. Ask one thing at a time.
 4. **Spikes.** List the open technical questions (unknown APIs, model speed, library fit, deploy target). Give one to each non-integrator, matched to strengths. Each spike gets the question, a timebox (30 minutes or about 10% of the event, whichever is shorter), and a note that the answer goes in DECISIONS.md.
 5. **Walking skeleton.** You and the integrator build it now: folder layout, one end-to-end path with mock data, nothing more. Discoveries from spikes land before the work is split. If a spike changes the skeleton, update it before teammates start their slices.
 6. **Contracts.** Write `CONTRACTS.md` for each interface in the skeleton: owner, users, request, success/empty/error examples.
-7. **Slices.** Split the remaining work into vertical slices with owned paths that don't overlap. Assign by strengths where known, otherwise by need. The integrator owns shared files (layout, config, CONTRACTS.md).
+7. **Slices.** Split the remaining work into vertical slices with owned paths that don't overlap. Assign by strengths where known, otherwise by need. The integrator owns shared files (layout, config). Don't list DECISIONS.md or CONTRACTS.md as anyone's paths: everyone appends to DECISIONS.md, and each contract's owner is named inside CONTRACTS.md.
 8. From the repo root, run `python3 SKILL_DIR/scripts/install_project.py`. Fill in `TEAM.md`, then run `python3 SKILL_DIR/scripts/sync_check.py --check-team` and fix any overlaps it reports. Add the first DECISIONS.md entry (goal, end time, integrator, spikes).
 9. Commit on main (`team-build kickoff`) and push if there's a remote.
 10. Print this for the user to paste into the group chat (fill every `<>`):

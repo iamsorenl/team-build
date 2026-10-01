@@ -83,7 +83,7 @@ def edit_warning(people, me, paths):
         return None
     notes = []
     for path in paths:
-        if any(owns(m, path) for m in mine):
+        if path in WATCHED or any(owns(m, path) for m in mine):
             continue
         owners = [p["name"] for p in people if p not in mine and owns(p, path)]
         if owners:
@@ -182,6 +182,8 @@ def selftest():
     assert edit_warning(people, "stranger", ["api/routes.py"]) is None  # unknown user: silent
     assert edit_warning(people, "", ["api/routes.py"]) is None
     assert edit_warning(people, "ana", ["README.md"]) is None  # unowned: silent
+    shared_owner = people + [{"name": "Sam", "git": "sam", "paths": ["DECISIONS.md", "CONTRACTS.md"]}]
+    assert edit_warning(shared_owner, "ana", ["DECISIONS.md", "CONTRACTS.md"]) is None  # shared logs: anyone may append
 
     with tempfile.TemporaryDirectory() as d:
         root = os.path.realpath(d)
