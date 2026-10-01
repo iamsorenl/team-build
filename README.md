@@ -1,17 +1,22 @@
 # team-build
 
-A skill for Claude Code and Codex that keeps a team in sync when everyone is driving their own coding agent on the same repo. It was built for hackathons.
+A skill for Claude Code and Codex that keeps a team in sync when everyone is driving their own coding agent on the same repo. It's built for hackathons and anything else that moves that fast.
 
-## The problem
+## Why this exists
 
-You split up the work. Each person's agent writes its plan from what the team knew at that moment. An hour in, someone finds out the API can't do what you assumed, or a data shape has to change. Nobody else's agent hears about it, and people end up redoing work. Because planning in parallel goes this badly, one person usually ends up planning while everyone else waits.
+I built this after a hackathon where every person on the team had their own coding agent, and we kept having to redo work because of each other's discoveries.
 
-This has been measured:
+We were figuring it out as we went. We split up the tasks, and then someone would learn something an hour in: the API couldn't do what we'd assumed, or a data shape had to change. Nobody else's agent knew. Their plans were built on the old assumption, so people had to start over. Planning in parallel didn't work either, because every plan depended on the others, so one person ended up planning while everyone else waited.
+
+The agents made each of us fast. What slowed us down was the team. Coding agents help a lot when one person holds all the context, and they fall apart once several people each hold a different slice of it under a deadline.
+
+It's a known problem, not just a bad weekend:
 
 - [CooperBench](https://arxiv.org/abs/2601.13295) gave two coding agents separate features in the same repo. Together they succeeded about 30% less often than one agent doing both. The failures came from vague or late messages, agents breaking agreed integration points, and wrong guesses about what the other agent was doing.
 - [When Agents Coordinate](https://arxiv.org/abs/2608.16801) found that a shared file works better than agents messaging each other, and that naming one agent "coordinator" didn't reliably help.
+- Brooks's law still applies (["The Mythical Agent-Month"](https://codemanship.wordpress.com/2026/04/06/the-mythical-agent-month/)). Merges land one at a time, and parallel branches drift further apart the longer they go without syncing. Agents make that worse, because they write code faster than people sync.
 
-team-build puts the shared state in a few repo files that every agent reads, and gives the team a simple routine around them.
+team-build puts the team's shared knowledge in a few repo files that every agent reads, whether it's Claude Code or Codex, and gives the team a simple routine around them.
 
 ## The routine
 
@@ -78,7 +83,7 @@ The ownership warning matches your `git config user.name` against `TEAM.md`, so 
 ## Known limits
 
 - The overlap check compares path patterns with each other, not with every possible file, so unusual globs can slip past.
-- Codex users who don't trust the hooks only get the written rules.
+- Codex users who don't trust the hooks only get the written rules. (In testing, Codex followed the AGENTS.md ownership rule on its own and refused to edit someone else's file.)
 - If the integrator has the plugin installed and the project also has the vendored copy, the skill shows up twice in the skill list. Either one works.
 
 ## Tests
