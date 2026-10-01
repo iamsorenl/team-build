@@ -1,0 +1,12 @@
+{
+  "name": "team-build",
+  "description": "team-build: coordination for teams of people each using a coding agent.",
+  "owner": { "name": "Soren Larsen", "url": "https://github.com/iamsorenl" },
+  "plugins": [
+    {
+      "name": "team-build",
+      "description": "Kickoff, sync and wrap-up for multi-person Claude Code / Codex projects.",
+      "source": "./"
+    }
+  ]
+}

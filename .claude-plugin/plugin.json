@@ -1,0 +1,11 @@
+{
+  "name": "team-build",
+  "version": "0.1.0",
+  "description": "Keep a team in sync when everyone drives their own Claude Code or Codex agent on one repo (hackathons).",
+  "author": { "name": "Soren Larsen", "url": "https://github.com/iamsorenl" },
+  "homepage": "https://github.com/iamsorenl/team-build",
+  "repository": "https://github.com/iamsorenl/team-build",
+  "license": "MIT",
+  "keywords": ["team", "hackathon", "coordination", "codex", "multiplayer"],
+  "skills": "./skills/"
+}

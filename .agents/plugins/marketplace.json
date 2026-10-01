@@ -1,0 +1,12 @@
+{
+  "name": "team-build",
+  "interface": { "displayName": "team-build" },
+  "plugins": [
+    {
+      "name": "team-build",
+      "source": { "source": "url", "url": "https://github.com/iamsorenl/team-build.git", "ref": "main" },
+      "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
+      "category": "Productivity"
+    }
+  ]
+}
