@@ -2,6 +2,7 @@
 """Install team-build into a project repo without overwriting anything.
 
 Usage: install_project.py [project_root]
+       install_project.py --mcode      (each MiniMax Code user, once)
        install_project.py --selftest
 """
 import json, os, shutil, subprocess, sys, tempfile
@@ -80,6 +81,39 @@ def install(root, log=print):
     merge_hooks(os.path.join(root, ".codex", "hooks.json"), os.path.join(hooks, "codex-hooks.json"), log)
 
 
+def install_mcode(data_dir, log=print):
+    """MCode ignores project hook files, so install the hooks as a local plugin."""
+    if not os.path.isdir(data_dir):
+        log(f"{data_dir} not found. Install MiniMax Code and run `mcode login` first, or set MINIMAX_DATA_DIR.")
+        return 1
+    pkg = os.path.join(data_dir, "plugins", "team-build")
+    if os.path.lexists(pkg):
+        log(f"{pkg} already exists; left it alone")
+        return 0
+    manifest = {"name": "team-build", "version": "0.1.0", "license": "MIT",
+                "description": "team-build hooks for MiniMax Code (the skill loads from the project).",
+                "author": {"name": "Soren Larsen", "url": "https://github.com/iamsorenl"}}
+    write(os.path.join(pkg, ".claude-plugin", "plugin.json"), json.dumps(manifest, indent=2) + "\n")
+    # The plugin is global, so it runs its own copy of the hook and only reads project files as data.
+    # Pointing at the repo's .agents/ copy would run code from any repo opened in MCode.
+    hooks = os.path.join(SKILL_DIR, "hooks")
+    os.makedirs(os.path.join(pkg, "hooks"))
+    shutil.copy(os.path.join(hooks, "team_hook.py"), os.path.join(pkg, "hooks", "team_hook.py"))
+    # The [ -d ] check only stats the project; it keeps the hooks quiet in repos without team-build.
+    with open(os.path.join(hooks, "claude-settings.json")) as fh:
+        snippet = json.load(fh)
+    for entries in snippet["hooks"].values():
+        for e in entries:
+            for h in e["hooks"]:
+                h["command"] = h["command"].replace(
+                    'python3 "$(git rev-parse --show-toplevel)/.agents/skills/team-build/hooks/team_hook.py"',
+                    '[ -d "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/team-build" ] && '
+                    'python3 "${PLUGIN_ROOT}/hooks/team_hook.py"')
+    write(os.path.join(pkg, "hooks", "hooks.json"), json.dumps(snippet, indent=2) + "\n")
+    log(f"installed MCode plugin at {pkg}")
+    return 0
+
+
 def selftest():
     with tempfile.TemporaryDirectory() as d:
         root = os.path.realpath(d)
@@ -102,6 +136,34 @@ def selftest():
         assert os.path.isfile(os.path.join(root, ".agents", "skills", "team-build", "hooks", "team_hook.py"))
         for name in ("DECISIONS.md", "CONTRACTS.md", "TEAM.md"):
             assert read(os.path.join(root, name))
+        # MCode: missing data dir is an error and must not be created
+        missing = os.path.join(root, "nomcode")
+        assert install_mcode(missing, lines.append) == 1 and not os.path.exists(missing)
+        mc = os.path.join(root, "mc")
+        os.makedirs(mc)
+        assert install_mcode(mc, lines.append) == 0
+        pkg = os.path.join(mc, "plugins", "team-build")
+        manifest = json.loads(read(os.path.join(pkg, ".claude-plugin", "plugin.json")))
+        assert manifest["name"] == "team-build" and "skills" not in manifest, manifest
+        hooks_file = os.path.join(pkg, "hooks", "hooks.json")
+        cmds = [h["command"] for es in json.loads(read(hooks_file))["hooks"].values() for e in es for h in e["hooks"]]
+        assert len(cmds) == 2 and all('python3 "${PLUGIN_ROOT}/hooks/team_hook.py"' in c for c in cmds), cmds
+        assert not any(".agents/skills/team-build/hooks" in c for c in cmds), cmds  # never run repo-controlled code
+        assert os.path.isfile(os.path.join(pkg, "hooks", "team_hook.py"))
+        # global plugin stays silent in a repo that has a DECISIONS.md but no team-build
+        other = os.path.join(root, "other")
+        os.makedirs(other)
+        subprocess.run(["git", "init", "-q"], cwd=other, check=True)
+        write(os.path.join(other, "DECISIONS.md"), "# ours\n")
+        for c in cmds:
+            out = subprocess.run(["bash", "-c", c], cwd=other, input="{}", capture_output=True, text=True,
+                                 env={**os.environ, "PLUGIN_ROOT": pkg}).stdout
+            assert out == "", (c, out)
+        assert not os.path.exists(os.path.join(other, ".git", "team-build-seen"))
+        before = os.path.getmtime(hooks_file)
+        lines.clear()
+        assert install_mcode(mc, lines.append) == 0
+        assert any("already" in l for l in lines) and os.path.getmtime(hooks_file) == before
     print("selftest ok")
     return 0
 
@@ -109,6 +171,8 @@ def selftest():
 if __name__ == "__main__":
     if sys.argv[1:] == ["--selftest"]:
         sys.exit(selftest())
+    if sys.argv[1:] == ["--mcode"]:
+        sys.exit(install_mcode(os.environ.get("MINIMAX_DATA_DIR") or os.path.expanduser("~/.minimax")))
     target = sys.argv[1] if len(sys.argv) > 1 else subprocess.run(
         ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True).stdout.strip()
     if not target:
