@@ -54,7 +54,7 @@ MCode loads the skill from the project like Codex does, but it ignores project h
 python3 .agents/skills/team-build/scripts/install_project.py --mcode
 ```
 
-That writes a small hooks-only plugin to `~/.minimax/plugins/team-build` (or `$MINIMAX_DATA_DIR/plugins`). It never overwrites an existing one. In repos without team-build, the hooks do nothing.
+That writes a small plugin to `~/.minimax/plugins/team-build` (or `$MINIMAX_DATA_DIR/plugins`) with the two hooks and its own copy of the hook script. It never overwrites an existing one. The hooks only read the project's TEAM.md, DECISIONS.md and CONTRACTS.md, and never run code from the repo, so they do nothing in repos without team-build. To update after a team-build upgrade, delete that folder and run the command again.
 
 Things that tripped me up setting MCode up:
 

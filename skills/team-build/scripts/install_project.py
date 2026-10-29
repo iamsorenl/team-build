@@ -94,8 +94,15 @@ def install_mcode(data_dir, log=print):
                 "description": "team-build hooks for MiniMax Code (the skill loads from the project).",
                 "author": {"name": "Soren Larsen", "url": "https://github.com/iamsorenl"}}
     write(os.path.join(pkg, ".claude-plugin", "plugin.json"), json.dumps(manifest, indent=2) + "\n")
+    # The plugin is global, so it runs its own copy of the hook and only reads project files as data.
+    # Pointing at the repo's .agents/ copy would run code from any repo opened in MCode.
+    hooks = os.path.join(SKILL_DIR, "hooks")
     os.makedirs(os.path.join(pkg, "hooks"))
-    shutil.copy(os.path.join(SKILL_DIR, "hooks", "claude-settings.json"), os.path.join(pkg, "hooks", "hooks.json"))
+    shutil.copy(os.path.join(hooks, "team_hook.py"), os.path.join(pkg, "hooks", "team_hook.py"))
+    snippet = read(os.path.join(hooks, "claude-settings.json")).replace(
+        "$(git rev-parse --show-toplevel)/.agents/skills/team-build/hooks/team_hook.py",
+        "${PLUGIN_ROOT}/hooks/team_hook.py")
+    write(os.path.join(pkg, "hooks", "hooks.json"), snippet)
     log(f"installed MCode plugin at {pkg}")
     return 0
 
@@ -132,8 +139,10 @@ def selftest():
         manifest = json.loads(read(os.path.join(pkg, ".claude-plugin", "plugin.json")))
         assert manifest["name"] == "team-build" and "skills" not in manifest, manifest
         hooks_file = os.path.join(pkg, "hooks", "hooks.json")
-        with open(os.path.join(SKILL_DIR, "hooks", "claude-settings.json")) as fh:
-            assert json.loads(read(hooks_file)) == json.load(fh)
+        cmds = [h["command"] for es in json.loads(read(hooks_file))["hooks"].values() for e in es for h in e["hooks"]]
+        assert len(cmds) == 2 and all("${PLUGIN_ROOT}/hooks/team_hook.py" in c for c in cmds), cmds
+        assert not any("rev-parse" in c or ".agents" in c for c in cmds), cmds  # never run repo-controlled code
+        assert os.path.isfile(os.path.join(pkg, "hooks", "team_hook.py"))
         before = os.path.getmtime(hooks_file)
         lines.clear()
         assert install_mcode(mc, lines.append) == 0
