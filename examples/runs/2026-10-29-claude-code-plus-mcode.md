@@ -17,7 +17,7 @@
 | 4. Bo changes the contract, Ana picks it up | Ana's transcript has `team-build: DECISIONS.md or CONTRACTS.md changed since you last saw them.` | pass (see note) | Bo updated CONTRACTS.md to `days: [{date, high_c, low_c}]` and logged it. Ana's answer used the daily shape, and noticed that the log entry was signed "MiniMax Code" instead of Bo. |
 | 5. Ana tries to edit Bo's file | No hook warning: the edit hook never ran, because Claude declined before trying the edit | n/a for the hook; the rules worked | Claude cited the AGENTS.md rule ("`api/` belongs to Bo") and offered two options: ask Bo, or reassign the path. |
 | 5b (extra). Bo edits Ana's file (MCode) | MCode's session log has `team-build: web/status.html belongs to Ana. That is outside your slice in TEAM.md.` | pass | gpt-oss created the file anyway. That's allowed, since the warning never blocks, but a stronger model would likely have stopped. |
-| 6. Sync check | `origin/bo-status (Bo): touches other slices: web/status.html` | pass | n/a |
+| 6. Sync check | `origin/bo-status (Bo): touches other slices: web/status.html` | pass (on 5b's file, see note) | n/a |
 
 ## What broke
 
@@ -33,6 +33,7 @@
 - **Step 4 (Bo):** the local model's stream ended early ("Stream ended without finish_reason") after both files had been edited correctly. It's an Ollama or MCode hiccup, not a team-build one.
 - **Signed by the tool, not the person:** gpt-oss on MCode wrote "MiniMax Code" as the author of its DECISIONS.md entry. Claude, on Ana's side, caught it.
 - **Step 4 note:** Ana had also edited DECISIONS.md herself in step 2, so her reminder in step 4 would have fired even without Bo's change. The answer used Bo's new contract shape, so she did pick it up, but the hook alone doesn't prove it.
+- **Step 6 ran on Bo's 5b branch.** Step 5's file was never created and `sync_check` only reports branches other than `main`, so I pushed 5b's `web/status.html` on a `bo-status` branch and checked that instead. The scenario now has Ana work on an `ana-health` branch from step 5, so step 6 works as written.
 - **`mcode exec` only prints the final answer,** so hook text on the MCode side came from the marker file and MCode's session logs (`~/.minimax/v2/sessions/…/messages.jsonl`), not from stdout.
 
 ## Evidence

@@ -99,10 +99,17 @@ def install_mcode(data_dir, log=print):
     hooks = os.path.join(SKILL_DIR, "hooks")
     os.makedirs(os.path.join(pkg, "hooks"))
     shutil.copy(os.path.join(hooks, "team_hook.py"), os.path.join(pkg, "hooks", "team_hook.py"))
-    snippet = read(os.path.join(hooks, "claude-settings.json")).replace(
-        "$(git rev-parse --show-toplevel)/.agents/skills/team-build/hooks/team_hook.py",
-        "${PLUGIN_ROOT}/hooks/team_hook.py")
-    write(os.path.join(pkg, "hooks", "hooks.json"), snippet)
+    # The [ -d ] check only stats the project; it keeps the hooks quiet in repos without team-build.
+    with open(os.path.join(hooks, "claude-settings.json")) as fh:
+        snippet = json.load(fh)
+    for entries in snippet["hooks"].values():
+        for e in entries:
+            for h in e["hooks"]:
+                h["command"] = h["command"].replace(
+                    'python3 "$(git rev-parse --show-toplevel)/.agents/skills/team-build/hooks/team_hook.py"',
+                    '[ -d "$(git rev-parse --show-toplevel 2>/dev/null)/.agents/skills/team-build" ] && '
+                    'python3 "${PLUGIN_ROOT}/hooks/team_hook.py"')
+    write(os.path.join(pkg, "hooks", "hooks.json"), json.dumps(snippet, indent=2) + "\n")
     log(f"installed MCode plugin at {pkg}")
     return 0
 
@@ -140,9 +147,19 @@ def selftest():
         assert manifest["name"] == "team-build" and "skills" not in manifest, manifest
         hooks_file = os.path.join(pkg, "hooks", "hooks.json")
         cmds = [h["command"] for es in json.loads(read(hooks_file))["hooks"].values() for e in es for h in e["hooks"]]
-        assert len(cmds) == 2 and all("${PLUGIN_ROOT}/hooks/team_hook.py" in c for c in cmds), cmds
-        assert not any("rev-parse" in c or ".agents" in c for c in cmds), cmds  # never run repo-controlled code
+        assert len(cmds) == 2 and all('python3 "${PLUGIN_ROOT}/hooks/team_hook.py"' in c for c in cmds), cmds
+        assert not any(".agents/skills/team-build/hooks" in c for c in cmds), cmds  # never run repo-controlled code
         assert os.path.isfile(os.path.join(pkg, "hooks", "team_hook.py"))
+        # global plugin stays silent in a repo that has a DECISIONS.md but no team-build
+        other = os.path.join(root, "other")
+        os.makedirs(other)
+        subprocess.run(["git", "init", "-q"], cwd=other, check=True)
+        write(os.path.join(other, "DECISIONS.md"), "# ours\n")
+        for c in cmds:
+            out = subprocess.run(["bash", "-c", c], cwd=other, input="{}", capture_output=True, text=True,
+                                 env={**os.environ, "PLUGIN_ROOT": pkg}).stdout
+            assert out == "", (c, out)
+        assert not os.path.exists(os.path.join(other, ".git", "team-build-seen"))
         before = os.path.getmtime(hooks_file)
         lines.clear()
         assert install_mcode(mc, lines.append) == 0

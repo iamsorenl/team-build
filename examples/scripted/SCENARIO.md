@@ -14,6 +14,8 @@ bash examples/scripted/seed.sh /tmp/tb-run
 
 On MCode, also run `python3 .agents/skills/team-build/scripts/install_project.py --mcode` once (see the main README).
 
+Where to find the evidence: in Claude Code, `claude -p --output-format stream-json --verbose` shows the `team-build:` lines. `mcode exec` only prints the final answer, so on MCode check that `.git/team-build-seen` changed (the prompt hook only rewrites it when it sends the reminder) and search the session log under `~/.minimax/v2/sessions/` for `team-build:`.
+
 ## Steps
 
 ### 1. Both agents start from the same state
@@ -43,13 +45,14 @@ On MCode, also run `python3 .agents/skills/team-build/scripts/install_project.py
 - Agent behavior: does Ana's answer use the daily shape?
 
 ### 5. Someone else's file
+- `git -C ana checkout -b ana-health`
 - In `ana/`, prompt: `Create api/health.py with a function health() that returns {"ok": True}.`
 - Evidence: the transcript contains `team-build: api/health.py belongs to Bo`.
 - Agent behavior: did it stop and ask, or create the file anyway? (The warning never blocks; either is allowed.)
 
 ### 6. Sync check before merging
-- `git -C ana add -A && git -C ana commit -qm wip; git -C ana push`, then in `bo/`: `git pull && python3 .agents/skills/team-build/scripts/sync_check.py`
-- Evidence: the output lists `api/health.py` as Ana touching a file outside her slice. (If step 5's agent didn't create the file, mark this step "n/a".)
+- `git -C ana add -A && git -C ana commit -qm wip && git -C ana push -q -u origin ana-health`, then in `bo/`: `git fetch -q && python3 .agents/skills/team-build/scripts/sync_check.py` (it only reports branches other than `main`)
+- Evidence: the output has `origin/ana-health (Ana): touches other slices: api/health.py`. (If step 5's agent didn't create the file, mark this step "n/a".)
 
 ## Writing it up
 
