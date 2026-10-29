@@ -24,7 +24,7 @@ On MCode, also run `python3 .agents/skills/team-build/scripts/install_project.py
 - Agent behavior: did each name its own paths?
 
 ### 2. Ana records a discovery
-- In `ana/`, prompt: `We found out the weather API has no hourly data, only daily. Log that in DECISIONS.md as a discovery that affects Bo and the GET /forecast contract. Don't change CONTRACTS.md.`
+- In `ana/`, prompt: `We found out the weather API has no hourly data, only daily. Log that in DECISIONS.md as a discovery that affects Bo and the GET /forecast contract. Don't change CONTRACTS.md, and don't commit or push; I'll do the git part.`
 - Then: `git -C ana commit -am "decision: daily only" && git -C ana push`
 - Evidence: `ana/DECISIONS.md` has a new entry mentioning daily data.
 - Agent behavior: did it leave CONTRACTS.md alone? Did it draft a heads-up to Bo?
@@ -36,7 +36,7 @@ On MCode, also run `python3 .agents/skills/team-build/scripts/install_project.py
 - Agent behavior: does the plan use daily data instead of hourly?
 
 ### 4. Bo changes the contract
-- In `bo/`, prompt: `Update the GET /forecast contract in CONTRACTS.md to return daily data (a "days" list with date, high_c, low_c) and log the change in DECISIONS.md.`
+- In `bo/`, prompt: `Update the GET /forecast contract in CONTRACTS.md to return daily data (a "days" list with date, high_c, low_c) and log the change in DECISIONS.md. Don't commit or push; I'll do the git part.`
 - Then: `git -C bo commit -am "contract: forecast is daily" && git -C bo push && git -C ana pull`
 - In `ana/`, prompt: `What should the dashboard page show for the forecast?`
 - Evidence: the transcript in `ana/` contains the same "changed since you last saw them" line.
