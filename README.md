@@ -1,6 +1,8 @@
 # team-build
 
-A skill for Claude Code and Codex that keeps a team in sync when everyone is driving their own coding agent on the same repo. It's built for hackathons and anything else that moves that fast.
+When one person works with a coding agent, a good habit is to keep a progress doc in the repo with the plan, the decisions and what you ruled out. A new session reads it and picks up where the last one stopped. team-build is that doc for a whole team. Every person's agent reads and writes the same few files in the repo, so they all start from the same state.
+
+It works with Claude Code, Codex and MiniMax Code. It's built for hackathons and anything else that moves that fast. [examples/](examples/) has runs so far, and you can add your own.
 
 ## Why this exists
 
