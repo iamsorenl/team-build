@@ -2,6 +2,7 @@
 """Install team-build into a project repo without overwriting anything.
 
 Usage: install_project.py [project_root]
+       install_project.py --mcode      (each MiniMax Code user, once)
        install_project.py --selftest
 """
 import json, os, shutil, subprocess, sys, tempfile
@@ -80,6 +81,25 @@ def install(root, log=print):
     merge_hooks(os.path.join(root, ".codex", "hooks.json"), os.path.join(hooks, "codex-hooks.json"), log)
 
 
+def install_mcode(data_dir, log=print):
+    """MCode ignores project hook files, so install the hooks as a local plugin."""
+    if not os.path.isdir(data_dir):
+        log(f"{data_dir} not found. Install MiniMax Code and run `mcode login` first, or set MINIMAX_DATA_DIR.")
+        return 1
+    pkg = os.path.join(data_dir, "plugins", "team-build")
+    if os.path.lexists(pkg):
+        log(f"{pkg} already exists; left it alone")
+        return 0
+    manifest = {"name": "team-build", "version": "0.1.0", "license": "MIT",
+                "description": "team-build hooks for MiniMax Code (the skill loads from the project).",
+                "author": {"name": "Soren Larsen", "url": "https://github.com/iamsorenl"}}
+    write(os.path.join(pkg, ".claude-plugin", "plugin.json"), json.dumps(manifest, indent=2) + "\n")
+    os.makedirs(os.path.join(pkg, "hooks"))
+    shutil.copy(os.path.join(SKILL_DIR, "hooks", "claude-settings.json"), os.path.join(pkg, "hooks", "hooks.json"))
+    log(f"installed MCode plugin at {pkg}")
+    return 0
+
+
 def selftest():
     with tempfile.TemporaryDirectory() as d:
         root = os.path.realpath(d)
@@ -102,6 +122,22 @@ def selftest():
         assert os.path.isfile(os.path.join(root, ".agents", "skills", "team-build", "hooks", "team_hook.py"))
         for name in ("DECISIONS.md", "CONTRACTS.md", "TEAM.md"):
             assert read(os.path.join(root, name))
+        # MCode: missing data dir is an error and must not be created
+        missing = os.path.join(root, "nomcode")
+        assert install_mcode(missing, lines.append) == 1 and not os.path.exists(missing)
+        mc = os.path.join(root, "mc")
+        os.makedirs(mc)
+        assert install_mcode(mc, lines.append) == 0
+        pkg = os.path.join(mc, "plugins", "team-build")
+        manifest = json.loads(read(os.path.join(pkg, ".claude-plugin", "plugin.json")))
+        assert manifest["name"] == "team-build" and "skills" not in manifest, manifest
+        hooks_file = os.path.join(pkg, "hooks", "hooks.json")
+        with open(os.path.join(SKILL_DIR, "hooks", "claude-settings.json")) as fh:
+            assert json.loads(read(hooks_file)) == json.load(fh)
+        before = os.path.getmtime(hooks_file)
+        lines.clear()
+        assert install_mcode(mc, lines.append) == 0
+        assert any("already" in l for l in lines) and os.path.getmtime(hooks_file) == before
     print("selftest ok")
     return 0
 
@@ -109,6 +145,8 @@ def selftest():
 if __name__ == "__main__":
     if sys.argv[1:] == ["--selftest"]:
         sys.exit(selftest())
+    if sys.argv[1:] == ["--mcode"]:
+        sys.exit(install_mcode(os.environ.get("MINIMAX_DATA_DIR") or os.path.expanduser("~/.minimax")))
     target = sys.argv[1] if len(sys.argv) > 1 else subprocess.run(
         ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True).stdout.strip()
     if not target:

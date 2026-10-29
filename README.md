@@ -46,11 +46,35 @@ codex plugin add team-build@team-build
 
 **Manual:** copy `skills/team-build` into `~/.claude/skills/` (Claude Code) or `~/.agents/skills/` (Codex).
 
+**MiniMax Code (MCode)**
+
+MCode loads the skill from the project like Codex does, but it ignores project hook files and only runs hooks that come from a plugin. So after kickoff, each teammate on MCode runs this once from the project:
+
+```
+python3 .agents/skills/team-build/scripts/install_project.py --mcode
+```
+
+That writes a small hooks-only plugin to `~/.minimax/plugins/team-build` (or `$MINIMAX_DATA_DIR/plugins`). It never overwrites an existing one. In repos without team-build, the hooks do nothing.
+
+Things that tripped me up setting MCode up:
+
+- `mcode login` goes to MiniMax's China site by default. Use `mcode login --region global`.
+- MiniMax's own models need paid credits (`insufficient balance (1008)` means none). You can run it free on a local Ollama model instead:
+  ```
+  read -s KEY; export KEY   # any value, Ollama ignores it
+  mcode provider add --name ollama-gptoss --base-url http://localhost:11434/v1 \
+    --api-format openai-completions --model gpt-oss:20b --api-key-env KEY \
+    --context-limit 32768 --output-limit 4096
+  mcode exec --model custom_provider:ollama-gptoss/gpt-oss:20b "..."
+  ```
+  `qwen3-coder:30b` failed with "does not support thinking". `gpt-oss:20b` worked.
+- Load the model in Ollama before the first run, or MCode's 10-second connection check times out.
+
 Then say something like "we're doing a hackathon with three people, set us up."
 
 ## Your teammates don't install anything
 
-Kickoff copies the skill into the project, so cloning the repo is enough for both Claude Code and Codex users.
+Kickoff copies the skill into the project, so cloning the repo is enough for both Claude Code and Codex users. MCode users also run the one `--mcode` command above to get the hooks.
 
 | File | What it's for |
 |---|---|
@@ -77,6 +101,8 @@ Two small hooks run for every teammate whose tool has them enabled:
 2. **Someone else's file.** If an agent is about to edit a file owned by another person in `TEAM.md`, it gets a warning naming the owner. The edit is never blocked.
 
 Codex asks each person to review and trust project hooks. Run `/hooks` once after cloning. Codex also only loads project config for projects you've trusted. If someone skips this, they still get the rules through `AGENTS.md`.
+
+MCode doesn't read `.claude/settings.json` or `.codex/hooks.json`. It gets the same two hooks from the plugin that `--mcode` installs.
 
 The ownership warning matches your `git config user.name` against `TEAM.md`, so make sure yours matches.
 
