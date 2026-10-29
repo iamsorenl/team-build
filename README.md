@@ -112,12 +112,17 @@ The ownership warning matches your `git config user.name` against `TEAM.md`, so 
 - Codex users who don't trust the hooks only get the written rules. (In testing, Codex followed the AGENTS.md ownership rule on its own and refused to edit someone else's file.)
 - If the integrator has the plugin installed and the project also has the vendored copy, the skill shows up twice in the skill list. Either one works.
 
+## Try it and add your run
+
+[examples/](examples/) has a scripted two-teammate scenario you can run alone with any two agents, plus reports from runs so far. If you try team-build with an agent or setup that isn't there, add a report. Failed runs count too.
+
 ## Tests
 
 ```
 python3 skills/team-build/hooks/team_hook.py --selftest
 python3 skills/team-build/scripts/install_project.py --selftest
 bash tests/sync_check_test.sh
+bash tests/seed_test.sh
 ```
 
 ## License
